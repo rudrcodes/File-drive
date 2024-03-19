@@ -1,5 +1,15 @@
 import { ConvexError, v } from "convex/values";
-import { internalMutation } from "./_generated/server";
+import { MutationCtx, QueryCtx, internalMutation } from "./_generated/server";
+import { GenericMutationCtx } from "convex/server";
+
+export const getUser = async (ctx: QueryCtx | MutationCtx, tokenIdentifier: string) => {
+
+    const user = await ctx.db.query("users").withIndex("by_tokenIdentifier", (q) =>
+        q.eq("tokenIdentifier", tokenIdentifier)).first()
+
+    if (!user) throw new ConvexError("Expected user to be defined (User doesn't exist)")
+    return user
+}
 
 export const createUser = internalMutation({
     args: { tokenIdentifier: v.string() },
@@ -23,13 +33,17 @@ export const addOrgToUser = internalMutation({
         // first get the user info
 
         console.log("token from users.ts : ", args.tokenIdentifier)
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) console.log("user identity doesn't exists")
+        console.log("identity.tokenIdentifier : ", identity?.tokenIdentifier)
+        console.log("args.tokenIdentifier : ", args.tokenIdentifier)
 
-        const user = await ctx.db.query("users").withIndex("by_tokenIdentifier", (q) =>
-            q.eq("tokenIdentifier", args.tokenIdentifier)).first()
+
         // q.eq("tokenIdentifier", args.tokenIdentifier)).first()
+        const user = await getUser(ctx, args.tokenIdentifier);
 
-        console.log("user from users.ts : ", user)
-        if (!user) throw new ConvexError("Expected user to be defined (User doesn't exist)")
+
+        // console.log("user from users.ts : ", user)
 
         // await ctx.db.insert("users", {
         //     tokenIdentifier: args.tokenIdentifier as string,
