@@ -1,3 +1,6 @@
+## Left on time : 47:00 / 4:37:20
+
+
 ## Add-ons
 add malware scanning, adult/cp content detection and also a summary of what files might be related to the current open file, This will really ramp up the value of this project from being a relatively "bare bones" crud to MADNESS
 
