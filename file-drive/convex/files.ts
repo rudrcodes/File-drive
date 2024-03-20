@@ -27,11 +27,22 @@ export const hasAccessToOrg = async (
 
 }
 
+
+export const generateUploadUrl = mutation(async (ctx) => {
+
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+        throw new ConvexError("Not authorised");
+    }
+    return await ctx.storage.generateUploadUrl();
+});
+
 // To add files in the db
 export const createFile = mutation({
     args: {
         name: v.string(),
-        orgId: v.optional(v.string())
+        orgId: v.string(),
+        fileId: v.id("_storage")
     },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
@@ -55,7 +66,7 @@ export const createFile = mutation({
         }
 
         await ctx.db.insert("files", {
-            orgId: args.orgId!, name: args.name
+            orgId: args.orgId!, name: args.name, fileId: args.fileId
         })
     }
 })
