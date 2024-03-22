@@ -44,7 +44,8 @@ export const createFile = mutation({
         name: v.string(),
         orgId: v.string(),
         fileId: v.id("_storage"),
-        type:fileTypes
+        type: fileTypes,
+        fileUrlRudransh: v.optional(v.union(v.string(), v.null()))
     },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
@@ -66,9 +67,18 @@ export const createFile = mutation({
         if (!hasAccess) {
             throw new ConvexError("You do not have access to this org")
         }
+        // Did to get the url so that the files can be opened in the browser
+        let fileUrlRudransh = await ctx.storage.getUrl(args.fileId);
+        // let fileUrlRudransh = (args.type === "image") ? await ctx.storage.getUrl(args.fileId) : null;
+        // let fileUrlRudransh = (args.type === "image") ? await ctx.storage.getUrl(args.fileId) : null;
+        console.log("fileUrlRudransh : ", fileUrlRudransh)
 
         await ctx.db.insert("files", {
-            orgId: args.orgId!, name: args.name, fileId: args.fileId,type:args.type
+            orgId: args.orgId!,
+            name: args.name,
+            fileId: args.fileId,
+            type: args.type,
+            fileUrlRudransh
         })
     }
 })

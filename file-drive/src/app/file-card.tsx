@@ -99,21 +99,17 @@ function FileCardActions({ fileId }: { fileId: Id<"files"> }) {
     )
 }
 
-// TODO : This getUrl is expecting a diff fileID , and I'm giving it a different one , this has to be solved.
-function getFileUrl(fileId: Id<"_storage">): string {
-    console.log(`${process.env.NEXT_PUBLIC_CONVEX_URL}/api/storage/${fileId}`);
-
-    return `https://acoustic-kangaroo-501.convex.cloud/api/storage/kg21jjcxm0jjm2k74nxjhe5q6n6nr56m`
-    // return `${process.env.NEXT_PUBLIC_CONVEX_URL}/api/storage/${fileId}`
+// TODO : SOLVED ✅ :This getUrl is expecting a diff fileID , and I'm giving it a different one , this has to be solved.
+//* Solved : I used this storage method we get in the QueryCTX or MutationCTX : 
+//*let fileUrlRudransh = (args.type === "image") ? await ctx.storage.getUrl(args.fileId) : null;
 
 
-    // https://acoustic-kangaroo-501.convex.cloud/api/storage/kg21jjcxm0jjm2k74nxjhe5q6n6nr56m
-    // https://acoustic-kangaroo-501.convex.cloud/api/storage/53a26467-6910-4385-a488-cc27b3457057
+// function getFileUrl(fileId: Id<"_storage">): string {
+//     console.log(`${process.env.NEXT_PUBLIC_CONVEX_URL}/api/storage/${fileId}`);
 
-    // https://acoustic-kangaroo-501.convex.cloud/getImage?storageId=53a26467-6910-4385-a488-cc27b3457057
-    //   e.g. https://happy-animal-123.convex.site/getImage?storageId=456
+//     return `https://acoustic-kangaroo-501.convex.cloud/api/storage/kg21jjcxm0jjm2k74nxjhe5q6n6nr56m`
 
-}
+// }
 
 export const FileCard = ({ file }: FileCardProps) => {
     console.log("file in file card: ", file)
@@ -136,7 +132,8 @@ export const FileCard = ({ file }: FileCardProps) => {
                 <CardContent>
                     {file.type === 'image' && (
                         <Image
-                            src={getFileUrl(file.fileId)}
+                            src={file.fileUrlRudransh!}
+                            // src={getFileUrl(file.fileId)}
                             alt={file.name}
                             width="200"
                             height="200"
@@ -145,6 +142,7 @@ export const FileCard = ({ file }: FileCardProps) => {
                 </CardContent>
                 <CardFooter>
                     <Button>Download</Button>
+                    <Button onClick={() => window.open(file.fileUrlRudransh!)}>Open</Button>
                 </CardFooter>
             </Card>        </>
 

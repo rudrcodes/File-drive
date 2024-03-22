@@ -89,10 +89,11 @@ export const UploadButton = () => {
 
         const types = {
             'image/png': 'image',
+            'image/jpeg': 'image',
             'application/pdf': 'pdf',
             'text/csv': 'csv'
         } as Record<string, Doc<"files">["type"]>;
-
+        console.log("File type :", values.file[0].type);
         try {
             await createFile({
                 name: values.title,
