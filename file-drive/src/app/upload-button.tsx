@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input"
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
+import { Doc } from "../../convex/_generated/dataModel";
 
 const formSchema = z.object({
     title: z.string().min(1).max(200),
@@ -46,8 +47,8 @@ export const UploadButton = () => {
 
     const organization = useOrganization();
     const user = useUser();
-    console.log(user)
-    console.log(organization?.organization?.id)
+    // console.log(user)
+    // console.log(organization?.organization?.id)
 
     let orgId: string | undefined = undefined;
     if (organization?.isLoaded && user?.isLoaded) {
@@ -61,7 +62,7 @@ export const UploadButton = () => {
     const files = useQuery(api.files.getFile,
         orgId ? { orgId } : "skip")
 
-    console.log("All files : ", files)
+    // console.log("All files : ", files)
 
     // 1. Define your form.
     const form = useForm<z.infer<typeof formSchema>>({
@@ -86,11 +87,18 @@ export const UploadButton = () => {
         });
         const { storageId } = await result.json();
 
+        const types = {
+            'image/png': 'image',
+            'application/pdf': 'pdf',
+            'text/csv': 'csv'
+        } as Record<string, Doc<"files">["type"]>;
+
         try {
             await createFile({
                 name: values.title,
                 orgId,
-                fileId: storageId
+                fileId: storageId,
+                type: types[values.file[0].type]
             })
 
             form.reset();
@@ -111,7 +119,7 @@ export const UploadButton = () => {
         // Do something with the form values.
         // ✅ This will be type-safe and validated.
         // generateUploadUrl()
-        console.log(values)
+        // console.log(values)
     }
 
 

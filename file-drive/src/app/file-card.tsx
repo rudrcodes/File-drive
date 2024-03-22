@@ -32,10 +32,11 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-import { MoreVertical, TrashIcon } from "lucide-react"
-import { useState } from "react"
+import { FileTextIcon, GanttChartIcon, ImageIcon, MoreVertical, TrashIcon } from "lucide-react"
+import { ReactNode, useState } from "react"
 import { api } from "../../convex/_generated/api"
 import { useToast } from "@/components/ui/use-toast"
+import Image from "next/image"
 
 interface FileCardProps {
     file: Doc<"files">
@@ -98,17 +99,49 @@ function FileCardActions({ fileId }: { fileId: Id<"files"> }) {
     )
 }
 
+// TODO : This getUrl is expecting a diff fileID , and I'm giving it a different one , this has to be solved.
+function getFileUrl(fileId: Id<"_storage">): string {
+    console.log(`${process.env.NEXT_PUBLIC_CONVEX_URL}/api/storage/${fileId}`);
+
+    return `https://acoustic-kangaroo-501.convex.cloud/api/storage/kg21jjcxm0jjm2k74nxjhe5q6n6nr56m`
+    // return `${process.env.NEXT_PUBLIC_CONVEX_URL}/api/storage/${fileId}`
+
+
+    // https://acoustic-kangaroo-501.convex.cloud/api/storage/kg21jjcxm0jjm2k74nxjhe5q6n6nr56m
+    // https://acoustic-kangaroo-501.convex.cloud/api/storage/53a26467-6910-4385-a488-cc27b3457057
+
+    // https://acoustic-kangaroo-501.convex.cloud/getImage?storageId=53a26467-6910-4385-a488-cc27b3457057
+    //   e.g. https://happy-animal-123.convex.site/getImage?storageId=456
+
+}
+
 export const FileCard = ({ file }: FileCardProps) => {
+    console.log("file in file card: ", file)
+
+    const types = {
+        'image': <ImageIcon />,
+        'pdf': <FileTextIcon />,
+        'csv': <GanttChartIcon />
+    } as Record<Doc<"files">["type"], ReactNode>;
+
+
 
     return (
         <>
             <Card className="relative border-2 border-gray-300">
                 <CardHeader>
-                    <CardTitle>{file.name}  </CardTitle>
+                    <CardTitle className="flex gap-2"> <p>{types[file.type]}</p>{file.name}  </CardTitle>
                     <div className="absolute top-2 right-2"><FileCardActions fileId={file._id} /></div>
                 </CardHeader>
                 <CardContent>
-                    <p>Card Content</p>
+                    {file.type === 'image' && (
+                        <Image
+                            src={getFileUrl(file.fileId)}
+                            alt={file.name}
+                            width="200"
+                            height="200"
+                        />
+                    )}
                 </CardContent>
                 <CardFooter>
                     <Button>Download</Button>

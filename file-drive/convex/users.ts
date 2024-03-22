@@ -14,7 +14,7 @@ export const getUser = async (ctx: QueryCtx | MutationCtx, tokenIdentifier: stri
 export const createUser = internalMutation({
     args: { tokenIdentifier: v.string() },
     handler: async (ctx, args) => {
-        console.log("args.tokenIdentifier from users.ts : ", args.tokenIdentifier)
+        // console.log("args.tokenIdentifier from users.ts : ", args.tokenIdentifier)
 
         await ctx.db.insert("users", {
             tokenIdentifier: args.tokenIdentifier,
@@ -32,11 +32,11 @@ export const addOrgToUser = internalMutation({
     handler: async (ctx, args) => {
         // first get the user info
 
-        console.log("token from users.ts : ", args.tokenIdentifier)
+        // console.log("token from users.ts : ", args.tokenIdentifier)
         const identity = await ctx.auth.getUserIdentity();
         if (!identity) console.log("user identity doesn't exists")
-        console.log("identity.tokenIdentifier : ", identity?.tokenIdentifier)
-        console.log("args.tokenIdentifier : ", args.tokenIdentifier)
+        // console.log("identity.tokenIdentifier : ", identity?.tokenIdentifier)
+        // console.log("args.tokenIdentifier : ", args.tokenIdentifier)
 
 
         // q.eq("tokenIdentifier", args.tokenIdentifier)).first()

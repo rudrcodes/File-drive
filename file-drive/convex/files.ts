@@ -3,6 +3,7 @@ import { ConvexError, v } from "convex/values"
 import { MutationCtx, QueryCtx, mutation, query } from "./_generated/server"
 import { getUser } from "./users";
 import { UserIdentity } from "convex/server";
+import { fileTypes } from "./schema";
 
 
 export const hasAccessToOrg = async (
@@ -13,12 +14,12 @@ export const hasAccessToOrg = async (
     // This hasAccess var shows if the user has the right to create a file in that org
     const hasAccess = user.orgIds.includes(orgId!) || user.tokenIdentifier.includes(orgId!);
 
-    console.log(identity.tokenIdentifier)
-    console.log(user.tokenIdentifier)
-    console.log(user.orgIds)
-    console.log(orgId)
+    // console.log(identity.tokenIdentifier)
+    // console.log(user.tokenIdentifier)
+    // console.log(user.orgIds)
+    // console.log(orgId)
 
-    console.log(hasAccess)
+    // console.log(hasAccess)
     // if (!hasAccess) {
     //     throw new ConvexError("You do not have access to this org")
     // }
@@ -42,11 +43,12 @@ export const createFile = mutation({
     args: {
         name: v.string(),
         orgId: v.string(),
-        fileId: v.id("_storage")
+        fileId: v.id("_storage"),
+        type:fileTypes
     },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
-        console.log("identity from files.ts : ", identity)
+        // console.log("identity from files.ts : ", identity)
         if (!identity) {
             throw new ConvexError("Not authorised");
         }
@@ -66,7 +68,7 @@ export const createFile = mutation({
         }
 
         await ctx.db.insert("files", {
-            orgId: args.orgId!, name: args.name, fileId: args.fileId
+            orgId: args.orgId!, name: args.name, fileId: args.fileId,type:args.type
         })
     }
 })
