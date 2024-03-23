@@ -32,7 +32,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-import { FileTextIcon, GanttChartIcon, ImageIcon, MoreVertical, TrashIcon } from "lucide-react"
+import { ExternalLink, FileTextIcon, GanttChartIcon, ImageIcon, MoreVertical, TrashIcon } from "lucide-react"
 import { ReactNode, useState } from "react"
 import { api } from "../../convex/_generated/api"
 import { useToast } from "@/components/ui/use-toast"
@@ -126,10 +126,15 @@ export const FileCard = ({ file }: FileCardProps) => {
         <>
             <Card className="relative border-2 border-gray-300">
                 <CardHeader>
-                    <CardTitle className="flex gap-2"> <p>{types[file.type]}</p>{file.name}  </CardTitle>
+                    <CardTitle className="flex gap-2">
+                        <div className="flex justify-center">{types[file.type]}</div>
+                        {file.name}
+                    </CardTitle>
+
                     <div className="absolute top-2 right-2"><FileCardActions fileId={file._id} /></div>
                 </CardHeader>
-                <CardContent>
+
+                <CardContent className="h-[150px] flex justify-center items-center">
                     {file.type === 'image' && (
                         <Image
                             src={file.fileUrlRudransh!}
@@ -139,10 +144,22 @@ export const FileCard = ({ file }: FileCardProps) => {
                             height="200"
                         />
                     )}
+                    {file.type === "csv" && <GanttChartIcon className="h-20 w-20" />}
+                    {file.type === "pdf" && <FileTextIcon className="h-20 w-20" />}
                 </CardContent>
-                <CardFooter>
-                    <Button>Download</Button>
-                    <Button onClick={() => window.open(file.fileUrlRudransh!)}>Open</Button>
+                <CardFooter className="flex justify-between">
+                    <Button onClick={() => {
+                        window.open(file.fileUrlRudransh!),
+                            "_blank"
+                    }}>
+                        {/* <a href={file.fileUrlRudransh!} download="Rudransh-Data"> */}
+                        Download
+                        {/* </a> */}
+                    </Button>
+
+                    <Button onClick={() => window.open(file.fileUrlRudransh!)} variant="link" className="flex gap-2 justify-center items-center">
+                        Open <ExternalLink className="w-4 h-4 hover:scale-110" />
+                    </Button>
                 </CardFooter>
             </Card>        </>
 
