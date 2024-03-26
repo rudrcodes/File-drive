@@ -26,8 +26,9 @@ const PlaceHolder = () => {
     </div >
   )
 }
-export default function FileBrowser({ title, favorites }: { title: string, favorites?: boolean }) {
-  console.log("fav : ", favorites);
+export default function FileBrowser({ title, favoritesOnly }: { title: string, favoritesOnly?: boolean }) {
+  console.log("fav : ", favoritesOnly);
+
   const organization = useOrganization();
   const user = useUser();
   const [query, setQuery] = useState("")
@@ -39,8 +40,10 @@ export default function FileBrowser({ title, favorites }: { title: string, favor
     orgId = organization?.organization?.id! || user?.user?.id!
   }
   const files = useQuery(api.files.getFile,
-    orgId ? { orgId, query, favorites } : "skip")
+    orgId ? { orgId, query, favorites: favoritesOnly } : "skip")
 
+  const favorites = useQuery(api.files.getAllFavorites,
+    orgId ? { orgId } : "skip")
 
   return (
     <div>
@@ -65,7 +68,7 @@ export default function FileBrowser({ title, favorites }: { title: string, favor
             {files?.length == 0 && (<PlaceHolder />)}
             <div className="grid grid-cols-3 gap-4">
 
-              {files?.map((file) => <FileCard key={file._id} file={file} />)}
+              {files?.map((file) => <FileCard favorites={favorites ?? []} key={file._id} file={file} />)}
 
             </div>
           </>

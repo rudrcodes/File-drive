@@ -5,27 +5,31 @@ import { getUser } from "./users";
 import { UserIdentity } from "convex/server";
 import { fileTypes } from "./schema";
 import { Id } from "./_generated/dataModel";
+import { access } from "fs";
 
 
 export const hasAccessToOrg = async (
     ctx: QueryCtx | MutationCtx,
-    identity: UserIdentity,
+
     orgId?: string) => {
-    const user = await getUser(ctx, identity.tokenIdentifier);
+
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+        return null
+    }
+    // const user = await getUser(ctx, identity.tokenIdentifier);
+    const user = await ctx.db.query("users").withIndex("by_tokenIdentifier", (q) =>
+        q.eq("tokenIdentifier", identity.tokenIdentifier)).first()
+    if (!user) {
+        return null
+    }
+
     // This hasAccess var shows if the user has the right to create a file in that org
     const hasAccess = user.orgIds.includes(orgId!) || user.tokenIdentifier.includes(orgId!);
 
-    // console.log(identity.tokenIdentifier)
-    // console.log(user.tokenIdentifier)
-    // console.log(user.orgIds)
-    // console.log(orgId)
+    if (!hasAccess) return null
 
-    // console.log(hasAccess)
-    // if (!hasAccess) {
-    //     throw new ConvexError("You do not have access to this org")
-    // }
-
-    return hasAccess
+    return { user }
 
 }
 
@@ -49,22 +53,8 @@ export const createFile = mutation({
         fileUrlRudransh: v.optional(v.union(v.string(), v.null()))
     },
     handler: async (ctx, args) => {
-        const identity = await ctx.auth.getUserIdentity();
-        // console.log("identity from files.ts : ", identity)
-        if (!identity) {
-            throw new ConvexError("Not authorised");
-        }
 
-        // const user = await getUser(ctx, identity.tokenIdentifier);
-        // // This hasAccess var shows if the user has the right to create a file in that org
-        // const hasAccess = user.orgIds.includes(args.orgId!) || user.tokenIdentifier.includes(args.orgId!);
-
-        // console.log(identity.tokenIdentifier)
-        // console.log(user.tokenIdentifier)
-        // console.log(user.orgIds)
-        // console.log(args.orgId)
-
-        const hasAccess = await hasAccessToOrg(ctx, identity, args.orgId)
+        const hasAccess = await hasAccessToOrg(ctx, args.orgId)
         if (!hasAccess) {
             throw new ConvexError("You do not have access to this org")
         }
@@ -93,13 +83,8 @@ export const getFile = query({
         favorites: v.optional(v.boolean())
     },
     handler: async (ctx, args) => {
-        const identity = await ctx.auth.getUserIdentity();
 
-        if (!identity) {
-            return []
-        }
-
-        const hasAccess = await hasAccessToOrg(ctx, identity, args.orgId)
+        const hasAccess = await hasAccessToOrg(ctx, args.orgId)
         if (!hasAccess) {
             return []
         }
@@ -120,14 +105,11 @@ export const getFile = query({
 
         console.log("args.favorites : ", args.favorites)
         if (args.favorites) {
-            const user = await ctx.db.query("users").withIndex("by_tokenIdentifier",
-                (q) => q.eq("tokenIdentifier", identity.tokenIdentifier)).first();
 
-            console.log("user :", user)
-            if (!user) return allfiles;
+
 
             const favoriteFiles = await ctx.db.query("favorites").withIndex("by_userId_orgId_fileId",
-                (q) => q.eq("userId", user._id!).eq("orgId", args.orgId)).collect()
+                (q) => q.eq("userId", hasAccess.user._id!).eq("orgId", args.orgId)).collect()
 
             // What is done here?
             // "some" method in JS : some() method, which checks if at least one element in an array satisfies a provided condition. It returns true if at least one element passes the test, otherwise false.
@@ -186,14 +168,29 @@ export const toggleFavorite = mutation({
     }
 })
 
+export const getAllFavorites = query({
+    args: { orgId: v.string() },
+    handler: async (ctx, args) => {
+
+        //check if user is logged in and has access to the org
+        const hasAccess = await hasAccessToOrg(ctx, args.orgId)
+        if (!hasAccess) {
+            return []
+        }
+
+        //checking to see if file is alredy in the favorite table 
+        const favorites = await ctx.db.query("favorites").withIndex("by_userId_orgId_fileId",
+            (q) => q.eq("userId", hasAccess.user._id).eq("orgId", args.orgId)
+        ).collect();
+
+        return favorites
+    }
+})
+
+
 
 //Utility function
 async function hasAccessToFile(ctx: QueryCtx | MutationCtx, fileId: Id<"files">) {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-        return null;
-        // throw new ConvexError("You do not have access to this org")
-    }
 
     const file = await ctx.db.get(fileId)
     if (!file) {
@@ -201,21 +198,12 @@ async function hasAccessToFile(ctx: QueryCtx | MutationCtx, fileId: Id<"files">)
         // throw new ConvexError("This file doesn't exist.")
     }
 
-    const hasAccess = await hasAccessToOrg(ctx, identity, file.orgId)
+    const hasAccess = await hasAccessToOrg(ctx, file.orgId)
     if (!hasAccess) {
         return null;
         // throw new ConvexError("You do not have access to delete this file.")
     }
 
-    const user = await ctx.db.query("users").withIndex("by_tokenIdentifier",
-        (q) => q.eq("tokenIdentifier", identity.tokenIdentifier)).first();
-
-    if (!user) {
-        return null;
-
-        // throw new ConvexError("No user found")
-    }
-
-    return { user, file }
+    return { user: hasAccess.user, file }
 
 }
