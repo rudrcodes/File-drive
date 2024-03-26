@@ -1,42 +1,16 @@
-import { useMutation, useQuery } from "convex/react"
-import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
-import { Doc, Id } from "../../convex/_generated/dataModel"
-import { Button } from "@/components/ui/button"
+import { useMutation } from "convex/react"
 
+import { Doc, Id } from "../../../../convex/_generated/dataModel"
 
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-
-
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-
-import { ExternalLink, FileTextIcon, GanttChartIcon, ImageIcon, MoreVertical, TrashIcon } from "lucide-react"
+import { ExternalLink, FileTextIcon, GanttChartIcon, ImageIcon, MoreVertical, StarIcon, TrashIcon } from "lucide-react"
 import { ReactNode, useState } from "react"
-import { api } from "../../convex/_generated/api"
-import { useToast } from "@/components/ui/use-toast"
+import { api } from "../../../../convex/_generated/api"
 import Image from "next/image"
+import { useToast } from "@/components/ui/use-toast"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 
 interface FileCardProps {
     file: Doc<"files">
@@ -44,7 +18,9 @@ interface FileCardProps {
 
 function FileCardActions({ fileId }: { fileId: Id<"files"> }) {
     const { toast } = useToast();
+    // Mutations :
     const deleteFile = useMutation(api.files.deleteFile)
+    const toggleFavorite = useMutation(api.files.toggleFavorite)
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
     return (
         <>
@@ -92,6 +68,12 @@ function FileCardActions({ fileId }: { fileId: Id<"files"> }) {
                     <DropdownMenuItem onClick={() => {
                         setIsConfirmOpen(true)
                     }} className="flex gap-1 text-red-600 items-center cursor-pointer"><TrashIcon className="w-4 h-4" /> Delete file</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => {
+                        toggleFavorite({
+                            fileId
+                        })
+                    }} className="flex gap-1 text-blue-600 items-center cursor-pointer"><StarIcon className="w-4 h-4" /> Favorite file</DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
         </>
@@ -112,7 +94,7 @@ function FileCardActions({ fileId }: { fileId: Id<"files"> }) {
 // }
 
 export const FileCard = ({ file }: FileCardProps) => {
-    console.log("file in file card: ", file)
+    // console.log("file in file card: ", file)
 
     const types = {
         'image': <ImageIcon />,
