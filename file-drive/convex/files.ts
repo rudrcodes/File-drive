@@ -25,7 +25,7 @@ export const hasAccessToOrg = async (
     }
 
     // This hasAccess var shows if the user has the right to create a file in that org
-    const hasAccess = user.orgIds.includes(orgId!) || user.tokenIdentifier.includes(orgId!);
+    const hasAccess = user.orgIds.some((item) => item.orgId === orgId) || user.tokenIdentifier.includes(orgId!);
 
     if (!hasAccess) return null
 
@@ -62,7 +62,7 @@ export const createFile = mutation({
         let fileUrlRudransh = await ctx.storage.getUrl(args.fileId);
         // let fileUrlRudransh = (args.type === "image") ? await ctx.storage.getUrl(args.fileId) : null;
         // let fileUrlRudransh = (args.type === "image") ? await ctx.storage.getUrl(args.fileId) : null;
-        console.log("fileUrlRudransh : ", fileUrlRudransh)
+        // console.log("fileUrlRudransh : ", fileUrlRudransh)
 
         await ctx.db.insert("files", {
             orgId: args.orgId!,
@@ -95,15 +95,15 @@ export const getFile = query({
 
         const query = args.query
         // Can't able to fetch Favorites
-        console.log("GET files line 111")
-        console.log("Query : ", query)
+        // console.log("GET files line 111")
+        // console.log("Query : ", query)
         // if (!query) return allfiles;
         if (query) {
             allfiles = allfiles.filter((file) => file.name.toLowerCase().includes(query.toLowerCase()))
         }
-        console.log("GET files")
+        // console.log("GET files")
 
-        console.log("args.favorites : ", args.favorites)
+        // console.log("args.favorites : ", args.favorites)
         if (args.favorites) {
 
 
@@ -135,8 +135,13 @@ export const deleteFile = mutation({
             throw new ConvexError("Doesn't have access to file.")
         }
 
-        await ctx.db.delete(args.fileId)
+        const isAdmin = access.user.orgIds.find((org) => org.orgId === access.file.orgId)?.role === "admin"
 
+        if (!isAdmin) {
+            throw new ConvexError("Doen't have admin access to delete file.")
+        }
+
+        await ctx.db.delete(args.fileId)
     }
 })
 

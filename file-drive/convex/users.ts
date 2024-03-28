@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { MutationCtx, QueryCtx, internalMutation } from "./_generated/server";
 import { GenericMutationCtx } from "convex/server";
+import { roles } from "./schema";
 
 export const getUser = async (ctx: QueryCtx | MutationCtx, tokenIdentifier: string) => {
 
@@ -18,7 +19,7 @@ export const createUser = internalMutation({
 
         await ctx.db.insert("users", {
             tokenIdentifier: args.tokenIdentifier,
-            orgIds: []
+            orgIds: [],
         })
     }
 })
@@ -27,14 +28,13 @@ export const createUser = internalMutation({
 export const addOrgToUser = internalMutation({
     args: {
         tokenIdentifier: v.string(),
-        orgId: v.string()
+        orgId: v.string(),
+        role: roles
     },
     handler: async (ctx, args) => {
         // first get the user info
 
         // console.log("token from users.ts : ", args.tokenIdentifier)
-        const identity = await ctx.auth.getUserIdentity();
-        if (!identity) console.log("user identity doesn't exists")
         // console.log("identity.tokenIdentifier : ", identity?.tokenIdentifier)
         // console.log("args.tokenIdentifier : ", args.tokenIdentifier)
 
@@ -51,15 +51,30 @@ export const addOrgToUser = internalMutation({
         // })
 
         await ctx.db.patch(user._id, {
-            orgIds: [...user?.orgIds, args.orgId]
+            orgIds: [...user?.orgIds, { orgId: args.orgId, role: args.role }]
         })
     }
 })
 
+export const updateRoleInOrgForUser = internalMutation({
+    args: {
+        tokenIdentifier: v.string(),
+        orgId: v.string(),
+        role: roles
+    },
+    handler: async (ctx, args) => {
+        console.log("Updated called");
+        const user = await getUser(ctx, args.tokenIdentifier);
 
-// Focus on this :   "https://verified-collie-80.clerk.accounts.dev|user_2duQGg04NzlzicfmVddRNScnk5r"
+        const org = user.orgIds.find((org) => org.orgId === args.orgId)
+        if (!org) {
+            throw new ConvexError("Expected on org for user but not found")
+        }
 
+        org.role = args.role
 
-
-
-//   "https://verified-collie-80.clerk.accounts.dev|user_2duQnq6teK2N7tMjvJhrKHIiHz0"
+        await ctx.db.patch(user._id, {
+            orgIds: user?.orgIds
+        })
+    }
+})

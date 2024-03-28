@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Protect } from "@clerk/nextjs"
 
 interface FileCardProps {
     file: Doc<"files">,
@@ -56,7 +57,7 @@ function FileCardActions({ fileId, isFavorited }: { fileId: Id<"files">, isFavor
                                 toast({
                                     variant: "destructive",
                                     title: "Error in deleting file ",
-                                    description: "The file has been deleted from our server"
+                                    description: "The file can't be deleted, either you don't have admin access or there is some backend problem going on."
                                 })
 
                             }
@@ -70,10 +71,17 @@ function FileCardActions({ fileId, isFavorited }: { fileId: Id<"files">, isFavor
             <DropdownMenu>
                 <DropdownMenuTrigger><MoreVertical /></DropdownMenuTrigger>
                 <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => {
-                        setIsConfirmOpen(true)
-                    }} className="flex gap-1 text-red-600 items-center cursor-pointer"><TrashIcon className="w-4 h-4" /> Delete file</DropdownMenuItem>
-                    <DropdownMenuSeparator />
+
+                    <Protect
+                        role="org:admin"
+                        fallback={<></>}
+                    >
+                        <DropdownMenuItem onClick={() => {
+                            setIsConfirmOpen(true)
+                        }} className="flex gap-1 text-red-600 items-center cursor-pointer"><TrashIcon className="w-4 h-4" /> Delete file</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                    </Protect>
+
                     <DropdownMenuItem onClick={() => {
                         toggleFavorite({
                             fileId

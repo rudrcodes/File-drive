@@ -31,10 +31,24 @@ http.route({
                     break;
 
                 case "organizationMembership.created":
+                    console.log("created : ", result.data.role)
+
                     await ctx.runMutation(internal.users.addOrgToUser, {
                         //result.data.id :  this is the user id
                         tokenIdentifier: `https://verified-collie-80.clerk.accounts.dev|${result.data.public_user_data.user_id}`,
-                        orgId: result.data.organization.id
+                        orgId: result.data.organization.id,
+                        role: result.data.role === "org:admin" ? "admin" : "member"
+                    });
+                    break;
+
+                case "organizationMembership.updated":
+                    console.log("updated : ", result.data.role)
+
+                    await ctx.runMutation(internal.users.updateRoleInOrgForUser, {
+                        //result.data.id :  this is the user id
+                        tokenIdentifier: `https://verified-collie-80.clerk.accounts.dev|${result.data.public_user_data.user_id}`,
+                        orgId: result.data.organization.id,
+                        role: result.data.role === "org:admin" ? "admin" : "member"
                     });
                     break;
 
