@@ -10,10 +10,15 @@ export default defineSchema({
         type: fileTypes,
         orgId: v.string(),
         fileId: v.id("_storage"),
-        fileUrlRudransh: v.union(v.string(), v.null())
-    }).index("by_orgId", ["orgId"]),
+        fileUrlRudransh: v.union(v.string(), v.null()),
+        shouldDelete: v.optional(v.boolean()),
+        userId: v.id("users")
+    }).index("by_orgId", ["orgId"])
+        .index("by_shouldDelete", ["shouldDelete"]),
     users: defineTable({
         tokenIdentifier: v.string(),
+        name: v.optional(v.string()),
+        image: v.optional(v.string()),
         orgIds: v.array(v.object({
             orgId: v.string(),
             role: roles

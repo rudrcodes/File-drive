@@ -1,8 +1,10 @@
-import { useMutation } from "convex/react"
+import { useMutation, useQuery } from "convex/react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { format, formatDistance, formatRelative, subDays } from 'date-fns'
 
 import { Doc, Id } from "../../../../convex/_generated/dataModel"
 
-import { ExternalLink, FileTextIcon, GanttChartIcon, ImageIcon, MoreVertical, StarHalf, StarIcon, TrashIcon } from "lucide-react"
+import { Download, ExternalLink, FileTextIcon, GanttChartIcon, ImageIcon, MoreVertical, StarHalf, StarIcon, TrashIcon, UndoIcon } from "lucide-react"
 import { ReactNode, useState } from "react"
 import { api } from "../../../../convex/_generated/api"
 import Image from "next/image"
@@ -18,10 +20,12 @@ interface FileCardProps {
     favorites: Doc<"favorites">[]
 }
 
-function FileCardActions({ fileId, isFavorited }: { fileId: Id<"files">, isFavorited: boolean }) {
+function FileCardActions({ file, isFavorited }: { file: Doc<"files">, isFavorited: boolean }) {
     const { toast } = useToast();
     // Mutations :
     const deleteFile = useMutation(api.files.deleteFile)
+    const restoreFile = useMutation(api.files.restoreFile)
+
     const toggleFavorite = useMutation(api.files.toggleFavorite)
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
 
@@ -35,8 +39,7 @@ function FileCardActions({ fileId, isFavorited }: { fileId: Id<"files">, isFavor
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete your account
-                            and remove your data from our servers.
+                            This action will mark the file for our deletion process.Files are deleted periodically.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -46,12 +49,13 @@ function FileCardActions({ fileId, isFavorited }: { fileId: Id<"files">, isFavor
                             try {
 
                                 await deleteFile({
-                                    fileId
+
+                                    fileId: file._id
                                 })
                                 toast({
                                     variant: "default",
-                                    title: "File deleted",
-                                    description: "The file has been deleted from our server"
+                                    title: "File marked for deletion",
+                                    description: "The file will be deleted soon."
                                 })
                             } catch (error) {
                                 toast({
@@ -72,19 +76,17 @@ function FileCardActions({ fileId, isFavorited }: { fileId: Id<"files">, isFavor
                 <DropdownMenuTrigger><MoreVertical /></DropdownMenuTrigger>
                 <DropdownMenuContent>
 
-                    <Protect
-                        role="org:admin"
-                        fallback={<></>}
-                    >
-                        <DropdownMenuItem onClick={() => {
-                            setIsConfirmOpen(true)
-                        }} className="flex gap-1 text-red-600 items-center cursor-pointer"><TrashIcon className="w-4 h-4" /> Delete file</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                    </Protect>
 
+                    <DropdownMenuItem className="cursor-pointer gap-1 flex" onClick={() => {
+                        window.open(file.fileUrlRudransh!),
+                            "_blank"
+                    }}>
+                        <Download className="w-4 h-4" />Download
+
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => {
                         toggleFavorite({
-                            fileId
+                            fileId: file._id
                         })
                     }}
                         className="flex gap-1 text-blue-600 items-center cursor-pointer">
@@ -98,6 +100,36 @@ function FileCardActions({ fileId, isFavorited }: { fileId: Id<"files">, isFavor
                         }
 
                     </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+
+                    <Protect
+                        role="org:admin"
+                        fallback={<></>}
+                    >
+                        <DropdownMenuItem >
+
+                            {file.shouldDelete ?
+                                <div className="flex gap-1 text-green-600 items-center cursor-pointer"
+                                    onClick={() => {
+                                        restoreFile({
+                                            fileId: file._id
+                                        })
+                                    }} >
+                                    <UndoIcon className="w-4 h-4" />
+                                    Restore file
+                                </div>
+                                :
+                                <div className="flex gap-1 text-red-600 items-center cursor-pointer" onClick={() => {
+                                    setIsConfirmOpen(true)
+                                }} >
+                                    <TrashIcon className="w-4 h-4" />
+                                    Delete file
+                                </div>
+                            }
+
+                        </DropdownMenuItem>
+                    </Protect>
                 </DropdownMenuContent>
             </DropdownMenu>
         </>
@@ -119,6 +151,9 @@ function FileCardActions({ fileId, isFavorited }: { fileId: Id<"files">, isFavor
 
 export const FileCard = ({ file, favorites }: FileCardProps) => {
     // console.log("file in file card: ", file)
+    const userProfile = useQuery(api.users.getUserProfile, {
+        userId: file.userId
+    })
 
     const types = {
         'image': <ImageIcon />,
@@ -134,12 +169,12 @@ export const FileCard = ({ file, favorites }: FileCardProps) => {
         <>
             <Card className="relative border-2 border-gray-300">
                 <CardHeader>
-                    <CardTitle className="flex gap-2">
+                    <CardTitle className="flex gap-2 text-base font-bold ">
                         <div className="flex justify-center">{types[file.type]}</div>
                         {file.name}
                     </CardTitle>
 
-                    <div className="absolute top-2 right-2"><FileCardActions isFavorited={isFavorited} fileId={file._id} /></div>
+                    <div className="absolute top-2 right-2"><FileCardActions isFavorited={isFavorited} file={file} /></div>
                 </CardHeader>
 
                 <CardContent className="h-[150px] flex justify-center items-center">
@@ -156,18 +191,26 @@ export const FileCard = ({ file, favorites }: FileCardProps) => {
                     {file.type === "pdf" && <FileTextIcon className="h-20 w-20" />}
                 </CardContent>
                 <CardFooter className="flex justify-between">
-                    <Button onClick={() => {
-                        window.open(file.fileUrlRudransh!),
-                            "_blank"
-                    }}>
-                        {/* <a href={file.fileUrlRudransh!} download="Rudransh-Data"> */}
-                        Download
-                        {/* </a> */}
-                    </Button>
+                    <div className="flex gap-2 text-xs text-gray-700 items-center w-[40%] " >
 
+                        <Avatar className="w-8 h-8">
+                            <AvatarImage src={userProfile?.image} />
+                            <AvatarFallback>...</AvatarFallback>
+                        </Avatar>
+                        {userProfile?.name}
+                    </div>
+
+                    <div className=" text-xs text-end">
+                        Uploaded: {formatRelative(new Date(file._creationTime), new Date())}
+
+                    </div>
+
+
+
+                    {/* 
                     <Button onClick={() => window.open(file.fileUrlRudransh!)} variant="link" className="flex gap-2 justify-center items-center">
                         Open <ExternalLink className="w-4 h-4 hover:scale-110" />
-                    </Button>
+                    </Button> */}
                 </CardFooter>
             </Card>        </>
 

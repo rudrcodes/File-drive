@@ -1,6 +1,6 @@
 // "use client"
 import { ConvexError, v } from "convex/values"
-import { MutationCtx, QueryCtx, mutation, query } from "./_generated/server"
+import { MutationCtx, QueryCtx, internalMutation, mutation, query } from "./_generated/server"
 import { getUser } from "./users";
 import { UserIdentity } from "convex/server";
 import { fileTypes } from "./schema";
@@ -50,7 +50,7 @@ export const createFile = mutation({
         orgId: v.string(),
         fileId: v.id("_storage"),
         type: fileTypes,
-        fileUrlRudransh: v.optional(v.union(v.string(), v.null()))
+        fileUrlRudransh: v.optional(v.union(v.string(), v.null())),
     },
     handler: async (ctx, args) => {
 
@@ -69,7 +69,8 @@ export const createFile = mutation({
             name: args.name,
             fileId: args.fileId,
             type: args.type,
-            fileUrlRudransh
+            fileUrlRudransh,
+            userId: hasAccess.user._id
         })
     }
 })
@@ -80,7 +81,8 @@ export const getFile = query({
     args: {
         orgId: v.string(),
         query: v.optional(v.string()),
-        favorites: v.optional(v.boolean())
+        favorites: v.optional(v.boolean()),
+        deletedOnly: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
 
@@ -94,19 +96,10 @@ export const getFile = query({
         }).collect()
 
         const query = args.query
-        // Can't able to fetch Favorites
-        // console.log("GET files line 111")
-        // console.log("Query : ", query)
-        // if (!query) return allfiles;
         if (query) {
             allfiles = allfiles.filter((file) => file.name.toLowerCase().includes(query.toLowerCase()))
         }
-        // console.log("GET files")
-
-        // console.log("args.favorites : ", args.favorites)
         if (args.favorites) {
-
-
 
             const favoriteFiles = await ctx.db.query("favorites").withIndex("by_userId_orgId_fileId",
                 (q) => q.eq("userId", hasAccess.user._id!).eq("orgId", args.orgId)).collect()
@@ -118,8 +111,28 @@ export const getFile = query({
             allfiles = allfiles.filter((file) =>
                 favoriteFiles.some((favorite) => favorite.fileId === file._id))
         }
+        if (args.deletedOnly) {
+            allfiles = allfiles.filter((file) => file.shouldDelete)
+        } else {
+            allfiles = allfiles.filter((file) => !file.shouldDelete)
+        }
 
         return allfiles
+    }
+})
+
+// For cronJob to delete all the files which are marked to be deletd
+export const deleteAllFiles = internalMutation({
+    args: {},
+    handler: async (ctx, args) => {
+        //check if user is logged in and has access to the org
+
+        const files = await ctx.db.query("files").withIndex("by_shouldDelete", q => q.eq("shouldDelete", true)).collect()
+
+        await Promise.all(files.map(async (file) => {
+            await ctx.storage.delete(file.fileId)
+            return await ctx.db.delete(file._id)
+        }))
     }
 })
 
@@ -141,9 +154,41 @@ export const deleteFile = mutation({
             throw new ConvexError("Doen't have admin access to delete file.")
         }
 
-        await ctx.db.delete(args.fileId)
+        // await ctx.db.delete(args.fileId)
+        //instead of deleting we will set shouldDelete to true
+        await ctx.db.patch(args.fileId,
+            { shouldDelete: true }
+        )
     }
 })
+
+export const restoreFile = mutation({
+    args: { fileId: v.id("files") },
+    handler: async (ctx, args) => {
+        //check if user is logged in and has access to the org
+
+        const access = await hasAccessToFile(ctx, args.fileId)
+        if (!access) {
+            throw new ConvexError("Doesn't have access to file.")
+        }
+
+        const isAdmin = access.user.orgIds.find((org) => org.orgId === access.file.orgId)?.role === "admin"
+
+        if (!isAdmin) {
+            throw new ConvexError("Doen't have admin access to delete file.")
+        }
+
+        // await ctx.db.delete(args.fileId)
+        //instead of deleting we will set shouldDelete to true
+        await ctx.db.patch(args.fileId,
+            { shouldDelete: false }
+        )
+    }
+})
+
+
+
+
 
 export const toggleFavorite = mutation({
     args: { fileId: v.id("files") },

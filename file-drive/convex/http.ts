@@ -26,7 +26,17 @@ http.route({
                 case "user.created":
                     await ctx.runMutation(internal.users.createUser, {
                         //result.data.id :  this is the user id
-                        tokenIdentifier: `https://verified-collie-80.clerk.accounts.dev|${result.data.id}`
+                        tokenIdentifier: `${process.env.CLERK_HOSTNAME}|${result.data.id}`,
+                        name: `${result.data.first_name} ${result.data.last_name ?? ''}`,
+                        image: result.data.image_url
+                    });
+                    break;
+                case "user.updated":
+                    await ctx.runMutation(internal.users.updateUser, {
+                        //result.data.id :  this is the user id
+                        tokenIdentifier: `${process.env.CLERK_HOSTNAME}|${result.data.id}`,
+                        name: `${result.data.first_name} ${result.data.last_name ?? ''}`,
+                        image: result.data.image_url
                     });
                     break;
 
@@ -35,7 +45,7 @@ http.route({
 
                     await ctx.runMutation(internal.users.addOrgToUser, {
                         //result.data.id :  this is the user id
-                        tokenIdentifier: `https://verified-collie-80.clerk.accounts.dev|${result.data.public_user_data.user_id}`,
+                        tokenIdentifier: `${process.env.CLERK_HOSTNAME}|${result.data.public_user_data.user_id}`,
                         orgId: result.data.organization.id,
                         role: result.data.role === "org:admin" ? "admin" : "member"
                     });
@@ -46,7 +56,7 @@ http.route({
 
                     await ctx.runMutation(internal.users.updateRoleInOrgForUser, {
                         //result.data.id :  this is the user id
-                        tokenIdentifier: `https://verified-collie-80.clerk.accounts.dev|${result.data.public_user_data.user_id}`,
+                        tokenIdentifier: `${process.env.CLERK_HOSTNAME}|${result.data.public_user_data.user_id}`,
                         orgId: result.data.organization.id,
                         role: result.data.role === "org:admin" ? "admin" : "member"
                     });

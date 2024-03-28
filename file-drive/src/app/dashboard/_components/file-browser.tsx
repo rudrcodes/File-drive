@@ -26,7 +26,7 @@ const PlaceHolder = () => {
     </div >
   )
 }
-export default function FileBrowser({ title, favoritesOnly }: { title: string, favoritesOnly?: boolean }) {
+export default function FileBrowser({ title, favoritesOnly, deletedOnly }: { title: string, favoritesOnly?: boolean, deletedOnly?: boolean }) {
   console.log("fav : ", favoritesOnly);
 
   const organization = useOrganization();
@@ -40,7 +40,7 @@ export default function FileBrowser({ title, favoritesOnly }: { title: string, f
     orgId = organization?.organization?.id! || user?.user?.id!
   }
   const files = useQuery(api.files.getFile,
-    orgId ? { orgId, query, favorites: favoritesOnly } : "skip")
+    orgId ? { orgId, query, favorites: favoritesOnly, deletedOnly } : "skip")
 
   const favorites = useQuery(api.files.getAllFavorites,
     orgId ? { orgId } : "skip")
