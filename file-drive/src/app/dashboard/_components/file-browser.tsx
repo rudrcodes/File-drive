@@ -13,6 +13,15 @@ import { DataTable } from "./file-table";
 import { columns } from "./columns";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Doc } from "../../../../convex/_generated/dataModel";
+import { Label } from "@/components/ui/label";
 
 
 const PlaceHolder = () => {
@@ -35,6 +44,8 @@ export default function FileBrowser({ title, favoritesOnly, deletedOnly }: { tit
   const organization = useOrganization();
   const user = useUser();
   const [query, setQuery] = useState("")
+
+  const [type, setType] = useState<Doc<"files">["type"] | 'all'>("all");
   // console.log(user)
   // console.log(organization?.organization?.id)
 
@@ -43,7 +54,10 @@ export default function FileBrowser({ title, favoritesOnly, deletedOnly }: { tit
     orgId = organization?.organization?.id! || user?.user?.id!
   }
   const files = useQuery(api.files.getFile,
-    orgId ? { orgId, query, favorites: favoritesOnly, deletedOnly } : "skip")
+    orgId ? {
+      orgId, query, favorites: favoritesOnly, deletedOnly,
+      type: (type === 'all') ? undefined : type
+    } : "skip")
 
   const favorites = useQuery(api.files.getAllFavorites,
     orgId ? { orgId } : "skip")
@@ -69,10 +83,30 @@ export default function FileBrowser({ title, favoritesOnly, deletedOnly }: { tit
           <UploadButton />
         </div>
         <Tabs defaultValue="grid" >
-          <TabsList className="mb-6">
-            <TabsTrigger value="grid" className="flex gap-1 justify-center items-center"><GridIcon className="w-5 h-5" /> Grid</TabsTrigger>
-            <TabsTrigger className="flex gap-1 justify-center items-center" value="table"><RowsIcon className="w-5 h-5" /> Table</TabsTrigger>
-          </TabsList>
+          <div className="flex justify-between items-center">
+            <TabsList className="mb-6">
+              <TabsTrigger value="grid" className="flex gap-1 justify-center items-center"><GridIcon className="w-5 h-5" /> Grid</TabsTrigger>
+              <TabsTrigger className="flex gap-1 justify-center items-center" value="table"><RowsIcon className="w-5 h-5" /> Table</TabsTrigger>
+            </TabsList>
+
+            <div className="flex items-center justify-center gap-1">
+              <Label htmlFor="type-select">Type Filter </Label>
+              <Select value={type} onValueChange={(value) =>
+                setType(value as Doc<"files">["type"])
+              }>
+                <SelectTrigger id="type-select" className="w-[180px]"  >
+                  <SelectValue placeholder="File Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All </SelectItem>
+                  <SelectItem value="pdf">PDF</SelectItem>
+                  <SelectItem value="image">Image</SelectItem>
+                  <SelectItem value="csv">CSV</SelectItem>
+                </SelectContent>
+              </Select>
+
+            </div>
+          </div>
           {files === undefined && (
             <div className=" flex justify-center items-center flex-col w-full">
               <Loader2 className="h-32 w-32 animate-spin text-gray-500" />
@@ -86,7 +120,9 @@ export default function FileBrowser({ title, favoritesOnly, deletedOnly }: { tit
             </div>
           </TabsContent>
           <TabsContent value="table">
-            <DataTable columns={columns} data={modifiedFiles} />
+            {files !== undefined &&
+              <DataTable columns={columns} data={modifiedFiles} />
+            }
           </TabsContent>
         </Tabs>
 

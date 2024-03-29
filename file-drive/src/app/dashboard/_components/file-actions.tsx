@@ -1,4 +1,4 @@
-import { useMutation } from "convex/react"
+import { useMutation, useQuery } from "convex/react"
 
 import { Doc } from "../../../../convex/_generated/dataModel"
 
@@ -19,7 +19,7 @@ function FileCardActions({ file, isFavorited }: { file: Doc<"files">, isFavorite
     const toggleFavorite = useMutation(api.files.toggleFavorite)
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
 
-
+    const me = useQuery(api.users.getMe)
 
 
     return (
@@ -94,7 +94,11 @@ function FileCardActions({ file, isFavorited }: { file: Doc<"files">, isFavorite
                     <DropdownMenuSeparator />
 
                     <Protect
-                        role="org:admin"
+                        condition={(checkRole) => {
+                            return checkRole({
+                                role: "org:admin",
+                            }) || file.userId === me?._id
+                        }}
                         fallback={<></>}
                     >
                         <DropdownMenuItem >
