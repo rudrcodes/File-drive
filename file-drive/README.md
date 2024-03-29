@@ -1,4 +1,4 @@
-## Left on time : 3:25:54 / 4:37:20
+## Left on time : 3:59:27 / 4:37:20
 
 TODO : org membership.updated vala kaam nhi kr rha h , have to look into it
 

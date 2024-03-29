@@ -1,141 +1,20 @@
-import { useMutation, useQuery } from "convex/react"
+import { useQuery } from "convex/react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { format, formatDistance, formatRelative, subDays } from 'date-fns'
+import { formatRelative } from 'date-fns'
 
-import { Doc, Id } from "../../../../convex/_generated/dataModel"
+import { Doc } from "../../../../convex/_generated/dataModel"
 
-import { Download, ExternalLink, FileTextIcon, GanttChartIcon, ImageIcon, MoreVertical, StarHalf, StarIcon, TrashIcon, UndoIcon } from "lucide-react"
-import { ReactNode, useState } from "react"
+import { FileTextIcon, GanttChartIcon, ImageIcon } from "lucide-react"
+import { ReactNode } from "react"
 import { api } from "../../../../convex/_generated/api"
 import Image from "next/image"
-import { useToast } from "@/components/ui/use-toast"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Protect } from "@clerk/nextjs"
+import FileCardActions from "./file-actions"
 
 interface FileCardProps {
-    file: Doc<"files">,
-    favorites: Doc<"favorites">[]
+    file: Doc<"files"> & { isFavorited: boolean },
 }
 
-function FileCardActions({ file, isFavorited }: { file: Doc<"files">, isFavorited: boolean }) {
-    const { toast } = useToast();
-    // Mutations :
-    const deleteFile = useMutation(api.files.deleteFile)
-    const restoreFile = useMutation(api.files.restoreFile)
-
-    const toggleFavorite = useMutation(api.files.toggleFavorite)
-    const [isConfirmOpen, setIsConfirmOpen] = useState(false)
-
-
-
-
-    return (
-        <>
-            <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action will mark the file for our deletion process.Files are deleted periodically.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={async () => {
-                            //TODO : Actually delete file from the convex server
-                            try {
-
-                                await deleteFile({
-
-                                    fileId: file._id
-                                })
-                                toast({
-                                    variant: "default",
-                                    title: "File marked for deletion",
-                                    description: "The file will be deleted soon."
-                                })
-                            } catch (error) {
-                                toast({
-                                    variant: "destructive",
-                                    title: "Error in deleting file ",
-                                    description: "The file can't be deleted, either you don't have admin access or there is some backend problem going on."
-                                })
-
-                            }
-                        }}>
-
-                            Continue</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <DropdownMenu>
-                <DropdownMenuTrigger><MoreVertical /></DropdownMenuTrigger>
-                <DropdownMenuContent>
-
-
-                    <DropdownMenuItem className="cursor-pointer gap-1 flex" onClick={() => {
-                        window.open(file.fileUrlRudransh!),
-                            "_blank"
-                    }}>
-                        <Download className="w-4 h-4" />Download
-
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {
-                        toggleFavorite({
-                            fileId: file._id
-                        })
-                    }}
-                        className="flex gap-1 text-blue-600 items-center cursor-pointer">
-                        {!isFavorited ?
-                            <div className="flex justify-center items-center gap-1">
-                                <StarHalf className="w-4 h-4" /> Favorite it
-                            </div> :
-                            <div className="flex justify-center items-center gap-1">
-                                <StarIcon className="w-4 h-4" /> Unfavorite it
-                            </div>
-                        }
-
-                    </DropdownMenuItem>
-
-                    <DropdownMenuSeparator />
-
-                    <Protect
-                        role="org:admin"
-                        fallback={<></>}
-                    >
-                        <DropdownMenuItem >
-
-                            {file.shouldDelete ?
-                                <div className="flex gap-1 text-green-600 items-center cursor-pointer"
-                                    onClick={() => {
-                                        restoreFile({
-                                            fileId: file._id
-                                        })
-                                    }} >
-                                    <UndoIcon className="w-4 h-4" />
-                                    Restore file
-                                </div>
-                                :
-                                <div className="flex gap-1 text-red-600 items-center cursor-pointer" onClick={() => {
-                                    setIsConfirmOpen(true)
-                                }} >
-                                    <TrashIcon className="w-4 h-4" />
-                                    Delete file
-                                </div>
-                            }
-
-                        </DropdownMenuItem>
-                    </Protect>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </>
-
-    )
-}
 
 // TODO : SOLVED ✅ :This getUrl is expecting a diff fileID , and I'm giving it a different one , this has to be solved.
 //* Solved : I used this storage method we get in the QueryCTX or MutationCTX : 
@@ -149,7 +28,7 @@ function FileCardActions({ file, isFavorited }: { file: Doc<"files">, isFavorite
 
 // }
 
-export const FileCard = ({ file, favorites }: FileCardProps) => {
+export const FileCard = ({ file }: FileCardProps) => {
     // console.log("file in file card: ", file)
     const userProfile = useQuery(api.users.getUserProfile, {
         userId: file.userId
@@ -162,7 +41,7 @@ export const FileCard = ({ file, favorites }: FileCardProps) => {
     } as Record<Doc<"files">["type"], ReactNode>;
 
 
-    const isFavorited = favorites.some(favorite => favorite.fileId === file._id)
+    // const isFavorited = favorites.some(favorite => favorite.fileId === file._id)
 
 
     return (
@@ -174,7 +53,7 @@ export const FileCard = ({ file, favorites }: FileCardProps) => {
                         {file.name}
                     </CardTitle>
 
-                    <div className="absolute top-2 right-2"><FileCardActions isFavorited={isFavorited} file={file} /></div>
+                    <div className="absolute top-2 right-2"><FileCardActions isFavorited={file.isFavorited} file={file} /></div>
                 </CardHeader>
 
                 <CardContent className="h-[150px] flex justify-center items-center">
