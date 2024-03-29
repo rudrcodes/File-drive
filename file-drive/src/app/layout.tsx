@@ -5,6 +5,7 @@ import ConvexClientProvider from "./ConvexClientProvider";
 import Header from "./Header";
 
 import { Toaster } from "@/components/ui/toaster";
+import Footer from "./Footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,10 +24,11 @@ export default function RootLayout({
       <body className={inter.className}>
 
         <ConvexClientProvider>
-          <Toaster/>
+          <Toaster />
           <Header />
 
           {children}
+          <Footer />
         </ConvexClientProvider>
       </body>
     </html>
